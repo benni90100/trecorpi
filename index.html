@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulazione Problema dei Tre Corpi</title>
+  <style>
+    canvas {
+      display: block;
+      margin: 0 auto;
+      background-color: black;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="simulation"></canvas>
+
+  <script>
+    const canvas = document.getElementById("simulation");
+    const ctx = canvas.getContext("2d");
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const G = 0.2; // Costante gravitazionale
+
+    // Funzione per calcolare la distanza tra due corpi
+    function distance(body1, body2) {
+      return Math.sqrt(Math.pow(body2.x - body1.x, 2) + Math.pow(body2.y - body1.y, 2));
+    }
+
+    // Definizione di un corpo
+    class Body {
+      constructor(x, y, mass, vx = 5, vy = 0) {
+        this.x = x;
+        this.y = y;
+        this.mass = mass;
+        this.vx = vx; // velocità in x
+        this.vy = vy; // velocità in y
+        this.ax = 0; // accelerazione in x
+        this.ay = 0; // accelerazione in y
+      }
+
+      updatePosition(dt) {
+        // Update velocità con accelerazione
+        this.vx += this.ax * dt;
+        this.vy += this.ay * dt;
+
+        // Update posizione con velocità
+        this.x += this.vx * dt;
+        this.y += this.vy * dt;
+      }
+
+      applyForce(fx, fy) {
+        // Applicare la forza come accelerazione
+        this.ax = fx / this.mass;
+        this.ay = fy / this.mass;
+      }
+
+      draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, 10, 0, 2 * Math.PI);
+        ctx.fillStyle = "white";
+        ctx.fill();
+        ctx.closePath();
+      }
+    }
+
+    // Funzione per calcolare la forza gravitazionale
+    function calculateGravitationalForce(body1, body2) {
+      const r = distance(body1, body2);
+      const force = (G * body1.mass * body2.mass) / Math.pow(r, 2);
+      const angle = Math.atan2(body2.y - body1.y, body2.x - body1.x);
+
+      // Componenti della forza
+      const fx = Math.cos(angle) * force;
+      const fy = Math.sin(angle) * force;
+
+      return { fx, fy };
+    }
+
+    // Creiamo tre corpi
+    const bodies = [
+      new Body(400, 200, 1e6, 0, 0.5), // Corpo 1
+      new Body(600, 300, 1e6, 0, -0.5), // Corpo 2
+      new Body(500, 500, 1e6, -0.5, 0) // Corpo 3
+    ];
+
+    // Simulazione
+    function updateSimulation() {
+      // Cancella il canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Applica le forze gravitazionali tra i corpi
+      for (let i = 0; i < bodies.length; i++) {
+        let fx = 0;
+        let fy = 0;
+
+        for (let j = 0; j < bodies.length; j++) {
+          if (i !== j) {
+            const { fx: fx_j, fy: fy_j } = calculateGravitationalForce(bodies[i], bodies[j]);
+            fx += fx_j;
+            fy += fy_j;
+          }
+        }
+
+        bodies[i].applyForce(fx, fy);
+      }
+
+      // Aggiorna la posizione dei corpi
+      const dt = 0.01; // intervallo temporale
+      for (const body of bodies) {
+        body.updatePosition(dt);
+        body.draw();
+      }
+
+      // Chiama l'update a intervalli regolari
+      requestAnimationFrame(updateSimulation);
+    }
+
+    updateSimulation();
+  </script>
+</body>
+</html>
